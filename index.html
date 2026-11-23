@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BTiers — Sword PvP тирлист</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
@@ -73,9 +73,10 @@ const av=(p,s=28)=>p?.avatar?`<img src="${esc(p.avatar)}" width="${s}" height="$
 const chip=x=>`<a class="chip" onclick="go('p','${x.player_id}')">${av(x.profiles,22)} ${esc(x.profiles?.username)}</a>`;
 let U=null,P=null,cur=['home'];
 
-async function ld(){if(!U)return;let {data}=await sb.from('profiles').select('*').eq('id',U.id).maybeSingle();
- if(!data){const m=U.user_metadata||{};({data}=await sb.from('profiles').insert({id:U.id,discord_id:m.provider_id||m.sub,username:m.full_name||m.name||m.user_name||'player',avatar:m.avatar_url,role:'player'}).select().single())}P=data}
-function nav(){$('#au').innerHTML=P?`${['tester','admin'].includes(P.role)?`<a onclick="go('t')">Тестер</a>`:''}${P.role=='admin'?`<a onclick="go('a')">Админ</a>`:''}<a onclick="go('me')">${av(P,24)} ${esc(P.username)}</a><a onclick="sb.auth.signOut()">Выйти</a>`:`<button class="btn dc" onclick="login()">Войти через Discord</button>`}
+let LE='';
+async function ld(){if(!U)return;LE='';let {data,error}=await sb.from('profiles').select('*').eq('id',U.id).maybeSingle();if(error)LE=error.message;
+ if(!data&&!error){const m=U.user_metadata||{};({data,error}=await sb.from('profiles').insert({id:U.id,discord_id:m.provider_id||m.sub,username:m.full_name||m.name||m.user_name||'player',avatar:m.avatar_url,role:'player'}).select().single());if(error)LE=error.message}P=data||null}
+function nav(){$('#au').innerHTML=P?`${['tester','admin'].includes(P.role)?`<a onclick="go('t')">Тестер</a>`:''}${P.role=='admin'?`<a onclick="go('a')">Админ</a>`:''}<a onclick="go('me')">${av(P,24)} ${esc(P.username)}</a><a onclick="sb.auth.signOut()">Выйти</a>`:U?`<a style="color:#ff7a82" onclick="alert(LE||'нет данных')">Ошибка профиля</a><a onclick="sb.auth.signOut()">Выйти</a>`:`<button class="btn dc" onclick="login()">Войти через Discord</button>`}
 const login=()=>sb.auth.signInWithOAuth({provider:'discord',options:{redirectTo:location.origin}});
 async function go(p,a){cur=[p,a];$('#v').innerHTML='<div class="pg mu">Загрузка…</div>';scrollTo(0,0);try{$('#v').innerHTML=await V[p](a)}catch(e){$('#v').innerHTML='<div class="pg mu">Ошибка: '+esc(e.message)+'</div>'}}
 const rf=()=>go(...cur);
@@ -112,7 +113,7 @@ async me(){return P?V.p(P.id):'<div class="pg"><p class="mu" style="margin-botto
 async p(id){const {data:u}=await sb.from('profiles').select('*').eq('id',id).maybeSingle();if(!u)return'<div class="pg mu">Игрок не найден</div>';
  const {data:r}=await sb.from('ratings').select('*').eq('player_id',id).maybeSingle();const t=r&&TC[r.tier];let x='';
  if(P&&P.id==id){const o=await qopen();const {data:e}=await sb.from('queue').select('id').eq('player_id',id).eq('status','waiting').maybeSingle();
-  x=`<div class="card" style="margin-top:16px"><h3 class="px">Очередь</h3>${!o?'<p>Очередь закрыта — следи за анонсами в Discord.</p>':e?'<p>Ты в очереди ✔</p><button class="btn" onclick="lq()">Выйти из очереди</button>':'<button class="btn r" onclick="jq()">Встать в очередь</button>'}</div>${P.role=='player'?`<div class="card" style="margin-top:16px"><h3 class="px">Стать тестером</h3><button class="btn" onclick="ap()">Подать заявку</button></div>`:P.role=='applying'?'<p class="mu" style="margin-top:16px">Заявка тестера на рассмотрении…</p>':''}`}
+  x=(P.nick_set?'':`<div class="card" style="margin-top:16px"><h3 class="px">Выбери ник</h3><p>Впиши свой ник в Minecraft. Он будет виден в тирлисте.</p><div class="sr"><input id="nk" maxlength="16" placeholder="Minecraft ник"><button class="btn r" onclick="sn()">Сохранить</button></div></div>`)+`<div class="card" style="margin-top:16px"><h3 class="px">Очередь</h3>${!o?'<p>Очередь закрыта — следи за анонсами в Discord.</p>':e?'<p>Ты в очереди ✔</p><button class="btn" onclick="lq()">Выйти из очереди</button>':'<button class="btn r" onclick="jq()">Встать в очередь</button>'}</div>${P.role=='player'?`<div class="card" style="margin-top:16px"><h3 class="px">Стать тестером</h3><button class="btn" onclick="ap()">Подать заявку</button></div>`:P.role=='applying'?'<p class="mu" style="margin-top:16px">Заявка тестера на рассмотрении…</p>':''}`}
  return `<div class="pg" style="max-width:520px"><div class="card pf">${av(u,96)}<h2 class="px">${esc(u.username)}</h2><span class="mu">${esc(u.role)}</span>${t?`<div class="tb2" style="background:${t[2]}">${r.tier}</div><div class="pts px">${r.points}</div><small class="mu">${pl(r.points)}</small>`:'<p class="mu" style="margin:8px 0 0">Ещё не оценён</p>'}</div>${x}</div>`},
 async t(){if(!P||!['tester','admin'].includes(P.role))return'<div class="pg mu">Нет доступа</div>';const o=await qopen();const {data:l}=await sb.from('queue').select('id,player_id,profiles(username,avatar)').eq('status','waiting').order('created_at');
  return `<div class="pg"><h1 class="px">Панель тестера</h1><div class="card"><span class="pill ${o?'on':'off'}">${o?'Очередь открыта':'Очередь закрыта'}</span><br><button class="btn ${o?'':'r'}" onclick="tg(${!o})">${o?'Закрыть':'Открыть'} очередь</button></div>${(l||[]).map(x=>`<div class="row" style="cursor:default">${av(x.profiles,34)}<span class="g">${esc(x.profiles?.username)}</span><select id="s${x.id}">${['LT3','HT4','LT4','HT5','LT5'].map(k=>`<option value="${k}">${k} · ${TC[k][1]}</option>`).join('')}</select><button class="btn r" onclick="gt('${x.id}','${x.player_id}')">Выдать тир</button><button class="btn" onclick="sk('${x.id}')">Пропустить</button></div>`).join('')||'<p class="mu" style="margin-top:12px">Очередь пуста</p>'}</div>`},
@@ -120,14 +121,17 @@ async a(){if(P?.role!='admin')return'<div class="pg mu">Нет доступа</d
  return `<div class="pg"><h1 class="px">Админ панель</h1>${(l||[]).map(x=>`<div class="row" style="cursor:default">${av(x,34)}<span class="g">${esc(x.username)}</span><em>${x.role=='applying'?'заявка':'тестер'}</em>${x.role=='applying'?`<button class="btn r" onclick="sr('${x.id}','tester')">Принять</button><button class="btn" onclick="sr('${x.id}','player')">Отклонить</button>`:`<button class="btn" onclick="sr('${x.id}','player')">Снять</button>`}</div>`).join('')||'<p class="mu">Заявок и тестеров пока нет</p>'}</div>`}
 };
 
-async function jq(){const {data:e}=await sb.from('queue').select('id').eq('player_id',P.id).eq('status','waiting').maybeSingle();if(!e){const {error}=await sb.from('queue').insert({player_id:P.id});if(error)alert(error.message)}rf()}
+async function jq(){if(!P.nick_set){alert('Сначала выбери ник в профиле');return go('me')}const {data:e}=await sb.from('queue').select('id').eq('player_id',P.id).eq('status','waiting').maybeSingle();if(!e){const {error}=await sb.from('queue').insert({player_id:P.id});if(error)alert(error.message)}rf()}
 async function lq(){await sb.from('queue').delete().eq('player_id',P.id).eq('status','waiting');rf()}
-async function ap(){await sb.from('profiles').update({role:'applying'}).eq('id',P.id);P.role='applying';rf()}
+async function ap(){await sb.rpc('apply_tester');P.role='applying';rf()}
 async function tg(o){await sb.from('queue_status').update({is_open:o}).eq('id',1);rf()}
 async function gt(qid,pid){const k=$('#s'+qid).value;await sb.from('ratings').delete().eq('player_id',pid);await sb.from('ratings').insert({player_id:pid,tier:k,points:TC[k][1],tested_by:P.id});await sb.from('queue').update({status:'tested'}).eq('id',qid);rf()}
+async function sn(){const n=$('#nk').value.trim();if(!/^[A-Za-z0-9_]{3,16}$/.test(n))return alert('Ник: 3–16 символов, латиница, цифры и _');
+const {data:d}=await sb.from('profiles').select('id').ilike('username',n.replace(/_/g,'\\_')).neq('id',P.id).limit(1);if(d?.length)return alert('Этот ник уже занят');
+const {error}=await sb.from('profiles').update({username:n,nick_set:true}).eq('id',P.id);if(error)return alert(error.message);P.username=n;P.nick_set=true;nav();rf()}
 async function sk(qid){await sb.from('queue').update({status:'skipped'}).eq('id',qid);rf()}
-async function sr(id,role){await sb.from('profiles').update({role}).eq('id',id);rf()}
+async function sr(id,role){await sb.rpc('set_role',{target:id,new_role:role});rf()}
 
-(async()=>{const {data:{session}}=await sb.auth.getSession();U=session?.user||null;await ld();nav();go('home');
-sb.auth.onAuthStateChange((e,s)=>{U=s?.user||null;P=null;setTimeout(async()=>{await ld();nav();rf()},0)})})();
+(async()=>{const {data:{session}}=await sb.auth.getSession();U=session?.user||null;await ld();nav();go(P&&!P.nick_set?'me':'home');
+sb.auth.onAuthStateChange((e,s)=>{const nu=s?.user||null;if(e=='SIGNED_OUT'){U=null;P=null;nav();go('home')}else if(nu&&(!U||U.id!=nu.id)){U=nu;setTimeout(async()=>{await ld();nav();go(P&&!P.nick_set?'me':'home')},0)}})})();
 </script></body></html>
